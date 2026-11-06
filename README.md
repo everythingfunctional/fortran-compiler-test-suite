@@ -18,7 +18,7 @@ options:
   -i INPUT, --input INPUT
                         Directory to search for the tests (default: tests)
   -o OUTPUT, --output OUTPUT
-                        Where to put the test results (default: results)
+                        Where to put the test results (default: results/<compiler>)
   -c COMPILER, --compiler COMPILER
                         The compiler to test (default: gfortran)
   -C C_COMPILER, --c-compiler C_COMPILER
@@ -32,17 +32,41 @@ options:
   -f FLAGS [FLAGS ...], --flags FLAGS [FLAGS ...]
                         The default flags to use for compilation (default: None)
 
-```
+Results are stored in `results/<compiler>/` by default (e.g., `results/gfortran/`).
+Use `aggregate_results.py` to generate summary tables across compilers.
 
 Note that the detailed information for each test case is saved in its output folder in a file named `outcome.txt`.
 A summary of the outcome will be reported to the screen,
 and passing the `-v` option will add increasing levels of detailed output about each test case to the screen output.
 
-# Contributing a Test
+# Aggregate Results
 
-> TODO: We still need to figure out a good organization strategy for the test cases.
-> There should be some hierarchy for where test cases go,
-> and a naming convention for the test case folders.
+The `aggregate_results.py` script collects results from multiple compiler runs and generates comparison tables.
+
+**Results must be in the format:** `results/<compiler_name>/...`
+
+Examples:
+
+```bash
+# Group by directory (basic, io, control, etc.)
+python aggregate_results.py results/gfortran results/intel --group-by directory --format markdown
+
+# Group by feature (tests count for each feature they have)
+python aggregate_results.py results/gfortran --group-by feature
+
+# Compare multiple compilers with markdown output
+python aggregate_results.py results/gfortran results/intel results/flang --format markdown
+```
+
+The compiler name is extracted from the directory name (e.g., `results/gfortran/` gives a column named "gfortran").
+
+Output formats:
+- `table` (default): Human-readable table
+- `markdown`: Markdown table for documentation
+- `csv`: Comma-separated values for spreadsheets
+- `json`: JSON for programmatic processing
+
+# Contributing a Test
 
 At an appropriate location with the `tests` directory
 
@@ -107,6 +131,8 @@ Briefly, it is a file that contains a list of key-value pairs, where the values 
 This framework expects to find the following keys.
 
 * `description`, required - A string that describes the features of the test case
+* `requires_revision`, required - A string that identifies the minimum revision of the Fortran standard that a compiler must conform to in order to successfully pass the test case, i.e. "Fortran 90".
+* `feature_sections`, required - An array of strings that identify the sections of the revision identified containing descriptions of the features used by the test case.
 * `features`, optional - An array of strings identifying various features of the language being tested
 * `source_files`, required - An array of strings identifying the source files, in the order in which they are to be compiled
 * `other_files`, optional - An array of strings identifying any additional files needed by the test case
